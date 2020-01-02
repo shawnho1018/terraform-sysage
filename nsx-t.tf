@@ -43,7 +43,6 @@ resource "nsxt_logical_switch" "switch1" {
 
   # Get Subnet from IP-Pool
   ip_pool_id = "${nsxt_ip_pool.ip_pool.id}"
-  depends_on        = ["null_resource.module_depends_on"]
 }
 resource "nsxt_logical_tier1_router" "tier1_router" {
   description                 = "RTR1 provisioned by Terraform"
@@ -86,8 +85,4 @@ resource "nsxt_logical_router_downlink_port" "downlink_port" {
   ip_address                    = "192.168.2.1/24"
 
 }
-resource "null_resource" "module_depends_on" {
-  triggers = {
-    value = "${length(var.module_depends_on)}"
-  }
-}
+
