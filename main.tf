@@ -5,6 +5,7 @@ provider "vsphere" {
   # If you have a self-signed cert
   allow_unverified_ssl = true
 }
+
 module "virtual-machine" {
   source  = "ulm0/vms/vsphere"
   version = "0.12.0"
@@ -29,6 +30,7 @@ module "virtual-machine" {
 module "virtual-machine1" {
   source  = "ulm0/vms/vsphere"
   version = "0.12.0"
+  vm_depends_on = [nsxt_logical_tier1_router.tier1_router.id]
   # Parameters for vSphere submodule
   vs_dc_name                 = "SDDC-SYS"
   vs_ds_name                 = "vsanDatastore"
