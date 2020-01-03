@@ -53,7 +53,7 @@ resource "nsxt_logical_tier1_router" "tier1_router" {
   advertise_connected_routes  = true
   advertise_static_routes     = true
   advertise_nat_routes        = true
-  advertise_lb_vip_routes     = false
+  advertise_lb_vip_routes     = true
   advertise_lb_snat_ip_routes = false
 
 }
@@ -85,4 +85,72 @@ resource "nsxt_logical_router_downlink_port" "downlink_port" {
   ip_address                    = "192.168.2.1/24"
 
 }
+# Load Balancer
+resource "nsxt_lb_service" "lb_service" {
+  description  = "lb_service provisioned by Terraform"
+  display_name = "lb_service"
 
+  enabled           = true
+  logical_router_id = "${nsxt_logical_tier1_router.tier1_router.id}"
+  error_log_level   = "INFO"
+  size              = "SMALL"
+  depends_on        = ["nsxt_logical_router_link_port_on_tier1.link_port_T1"]
+  virtual_server_ids = ["${nsxt_lb_http_virtual_server.lb_virtual_server.id}"]
+}
+
+# Add Pool Members
+resource "nsxt_lb_pool" "dynamic_pool" {
+  description              = "lb_pool provisioned by Terraform"
+  display_name             = "dynamic_lb_pool"
+  algorithm                = "LEAST_CONNECTION"
+  min_active_members       = 1
+  tcp_multiplexing_enabled = false
+  tcp_multiplexing_number  = 3
+
+  snat_translation {
+    type          = "SNAT_AUTO_MAP"
+  }
+
+  member {
+    admin_state                = "ENABLED"
+    backup_member              = "false"
+    display_name               = "1st-member"
+    ip_address                 = "192.168.2.2"
+    max_concurrent_connections = "1"
+    port                       = "8080"
+    weight                     = "1"
+  }
+  member {
+    admin_state                = "ENABLED"
+    backup_member              = "false"
+    display_name               = "2nd-member"
+    ip_address                 = "192.168.2.3"
+    max_concurrent_connections = "1"
+    port                       = "8080"
+    weight                     = "1"
+  }  
+}
+# Set Virtual Service
+resource "nsxt_lb_http_virtual_server" "lb_virtual_server" {
+  description                = "lb_virtual_server provisioned by terraform"
+  display_name               = "virtual server 1"
+  access_log_enabled         = true
+  enabled                    = true
+  ip_address                 = "10.9.25.250"
+  port                       = "80"
+  default_pool_member_port   = "80"
+  max_concurrent_connections = 50
+  max_new_connection_rate    = 20
+  application_profile_id     = "${nsxt_lb_http_application_profile.http_xff.id}"
+  #persistence_profile_id     = "${nsxt_lb_cookie_persistence_profile.session_persistence.id}"
+  pool_id                    = "${nsxt_lb_pool.dynamic_pool.id}"
+  #sorry_pool_id              = "${nsxt_lb_pool.sorry_pool.id}"
+  #rule_ids                   = ["${nsxt_lb_http_request_rewrite_rule.redirect_post.id}"]
+}
+resource "nsxt_lb_http_application_profile" "http_xff" {
+  description            = "lb_http_application_profile provisioned by Terraform"
+  display_name           = "lb_http_application_profile"
+  http_redirect_to_https = "false"
+  ntlm                   = "true"
+  x_forwarded_for        = "INSERT"
+}

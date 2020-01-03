@@ -17,13 +17,13 @@ module "virtual-machine1" {
   vs_vm_folder               = "ClusterAPI"
   vs_rp_name                 = "VCS"
   vs_network_name            = "${nsxt_logical_switch.switch1.display_name}"
-  vm_template_name           = "ubuntu1804"
+  vm_template_name           = "tomcat"
   dns_servers                = ["10.9.25.31"]
   domain                     = "syspks.com"
   vm_cpus                    = "2"
   vm_mem                     = "2048"
   vm_disk_size               = "60"
-  vms                        = {"server" = "192.168.2.2"}
+  vms                        = {"server1" = "192.168.2.2", "server2" = "192.168.2.3"}
   ip_netmask                 = "24"
   ip_gateway                 = "192.168.2.1"
 }
